@@ -1,38 +1,39 @@
-import Motocicleta from '../models/motocicleta.js';
-import Joi from 'joi';
+import { getDb } from "../configs/db.config.js";
+import Joi from "joi";
 
-const motocicletaSchema = Joi.object({
-    nombreAlumno: Joi.string().required(),
-    motorCC: Joi.number().min(50).max(500).required(),
-    modelo: Joi.number().integer().min(1000).max(9999).required(),
-    marca: Joi.string().min(10).required(),
-    extras: Joi.string().allow('')
+const schema = Joi.object({
+  nombreAlumno: Joi.string().required(),
+  motorCC: Joi.number().min(50).max(500).required(),
+  modelo: Joi.number().integer().min(1000).max(9999).required(),
+  marca: Joi.string().min(10).required(),
+  extras: Joi.string().optional()
 });
 
 export const getMotocicletas = async (req, res) => {
-    try {
-        const motos = await Motocicleta.find();
-        res.status(200).json(motos);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Error interno del servidor' }); 
-    }
+  try {
+    const db = getDb();
+    const motos = await db.collection("motocicletas").find().toArray();
+    return res.status(200).json(motos);
+  } catch (error) {
+    return res.status(500).json({ message: "Error al obtener motocicletas" });
+  }
 };
 
 export const createMotocicleta = async (req, res) => {
-    try {
-        const { error } = motocicletaSchema.validate(req.body);
-        if (error) return res.status(400).json({ message: error.details[0].message }); // 400 Bad Request
+  try {
+    const { error } = schema.validate(req.body);
+    if (error) return res.status(400).json({ error: error.details[0].message });
 
-        const existing = await Motocicleta.findOne({ modelo: req.body.modelo });
-        if (existing) return res.status(409).json({ message: 'La motocicleta ya existe' }); // 409 Conflict
+    const db = getDb();
 
-        const nuevaMoto = new Motocicleta(req.body);
-        await nuevaMoto.save();
+    const existente = await db.collection("motocicletas").findOne({ modelo: req.body.modelo });
+    if (existente)
+      return res.status(409).json({ message: "Motocicleta ya registrada" });
 
-        res.status(201).json(nuevaMoto);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Error interno del servidor' });
-    }
+    const result = await db.collection("motocicletas").insertOne(req.body);
+
+    return res.status(201).json({ message: "Motocicleta creada", data: result });
+  } catch (error) {
+    return res.status(500).json({ message: "Error al crear motocicleta" });
+  }
 };

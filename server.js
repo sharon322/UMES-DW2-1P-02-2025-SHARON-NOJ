@@ -1,30 +1,20 @@
-import express from 'express';
-import routes from './routes/motocicletaRoutes.js';
-import dotenv from 'dotenv';
-import mongoose from 'mongoose';
+import express from "express";
+import dotenv from "dotenv";
+import { connectToMongo } from "./configs/db.config.js";
+import motocicletaRoutes from "./routes/motocicletaRoutes.js";
 
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3000;
+
 app.use(express.json());
-
-app.use("/api/motocicletas", routes);
-
-const connectToMongo = async () => {
-  try {
-    await mongoose.connect(process.env.MONGO_URI);
-    console.log('Conectado a MongoDB');
-  } catch (error) {
-    console.error('Error al conectar a MongoDB:', error);
-    throw error;
-  }
-};
+app.use("/motocicletas", motocicletaRoutes);
 
 const startServer = async () => {
   try {
     await connectToMongo();
-    app.listen(port, '0.0.0.0', () => {
+    app.listen(port, "0.0.0.0", () => {
       console.log(`Servidor iniciado en puerto ${port}`);
     });
   } catch (error) {
